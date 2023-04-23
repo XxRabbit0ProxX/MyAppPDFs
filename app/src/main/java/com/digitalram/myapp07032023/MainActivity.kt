@@ -7,6 +7,8 @@ import android.view.View
 import android.widget.EditText
 import androidx.core.app.ActivityCompat
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
@@ -24,13 +26,10 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import android.graphics.Bitmap.CompressFormat.PNG
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.lowagie.text.Image
 import com.lowagie.text.pdf.PdfPTable
-import com.lowagie.text.pdf.PdfReader
 
 class MainActivity : AppCompatActivity() {
     
@@ -64,16 +63,44 @@ class MainActivity : AppCompatActivity() {
     fun btnGenerarClick(view: View) {
 
         crearPDF()
+
+        // Se crea una instancia de la clase File con la ruta del archivo que se desea abrir
+        val file = File(Environment.getExternalStorageDirectory(), "Android/data/com.digitalram.myapp07032023/files/"+NOMBRE_DIRECTORIO + "/" + NOMBRE_DOCUMENTO)
+
+        // Se utiliza FileProvider para obtener una Uri segura para el archivo
+        val uri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", file) // Utilizar FileProvider para obtener la URI del archivo
+
+        // Se crea una instancia de la clase Intent con la acción de visualización de contenido
+        val intent = Intent(Intent.ACTION_VIEW)
+
+        // Se establece la Uri del archivo y su tipo MIME en el Intent
+        intent.setDataAndType(uri, "application/pdf")
+
+        // Se otorgan permisos de lectura al Intent
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION // Otorgar permisos de lectura al Intent
+
+        try {
+
+            // Se intenta iniciar la actividad con el Intent para abrir el archivo en una aplicación externa
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+
+            // Si no se encuentra ninguna aplicación en el dispositivo que pueda manejar archivos PDF,
+            // se captura la excepción ActivityNotFoundException y se muestra un mensaje de Toast
+            Toast.makeText(this, "No se encontró una aplicación para abrir archivos PDF en este dispositivo", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun crearPDF() {
 
         var documento = Document()
 
+
         try {
 
             val file : File? = CrearFichero(NOMBRE_DOCUMENTO)
             val ficheroPDF = FileOutputStream(file!!.absoluteFile)
+
             val writer = PdfWriter.getInstance(documento, ficheroPDF)
 
             // Incluir Header
@@ -140,6 +167,7 @@ class MainActivity : AppCompatActivity() {
         } finally {
 
             documento.close()
+
         }
     }
 
